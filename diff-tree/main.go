@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-git/go-billy/v5/helper/polyfill"
+	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -30,15 +33,20 @@ func main() {
 	defer cancel()
 
 	inMemStore := memory.NewStorage()
+	workTree := polyfill.New(memfs.New())
 
+	buf := &bytes.Buffer{}
 	const gitPath = "https://github.com/yusufsyaifudin/benthos-sample.git"
-	repo, err := git.CloneContext(ctx, inMemStore, nil, &git.CloneOptions{
-		URL: gitPath,
+	repo, err := git.CloneContext(ctx, inMemStore, workTree, &git.CloneOptions{
+		URL:      gitPath,
+		Progress: buf,
 	})
 	if err != nil {
 		log.Fatalf("error plain clone: %s\n", err)
 		return
 	}
+
+	fmt.Println(buf.String())
 
 	// Here is the structure of commit in that project as of July 1st, 2022 when this program is written.
 	// last commit: fe2c1dad736aeb8ffa996d777e4b6c7dc14e21d6 -> fe2c1da
